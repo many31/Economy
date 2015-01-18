@@ -1,0 +1,172 @@
+package net.milkbowl.vault.permission.plugins;
+
+import com.overmc.overpermissions.OverPermissions;
+import com.overmc.overpermissions.OverPermissionsAPI;
+import java.util.logging.Logger;
+import net.milkbowl.vault.permission.Permission;
+import org.bukkit.Bukkit;
+import org.bukkit.Server;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.server.PluginDisableEvent;
+import org.bukkit.event.server.PluginEnableEvent;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.plugin.PluginDescriptionFile;
+import org.bukkit.plugin.PluginManager;
+
+public class Permission_OverPermissions
+  extends Permission
+{
+  private final String name = "OverPermissions";
+  private OverPermissions overPerms;
+  private OverPermissionsAPI api;
+  
+  public Permission_OverPermissions(Plugin plugin)
+  {
+    this.plugin = plugin;
+    Bukkit.getServer().getPluginManager().registerEvents(new PermissionServerListener(this), plugin);
+    if (this.overPerms == null)
+    {
+      Plugin perms = plugin.getServer().getPluginManager().getPlugin("OverPermissions");
+      if ((perms != null) && (perms.isEnabled()))
+      {
+        this.overPerms = ((OverPermissions)perms);
+        log.info(String.format("[%s][Permission] %s hooked.", new Object[] { plugin.getDescription().getName(), "OverPermissions" }));
+      }
+    }
+    if ((this.api == null) && (this.overPerms != null)) {
+      this.api = this.overPerms.getAPI();
+    }
+  }
+  
+  public String getName()
+  {
+    return "OverPermissions";
+  }
+  
+  public boolean isEnabled()
+  {
+    return (this.overPerms != null) && (this.overPerms.isEnabled());
+  }
+  
+  public boolean playerHas(String worldName, String playerName, String permission)
+  {
+    return this.api.playerHas(worldName, playerName, permission);
+  }
+  
+  public boolean playerAdd(String worldName, String playerName, String permission)
+  {
+    return this.api.playerAdd(worldName, playerName, permission);
+  }
+  
+  public boolean playerRemove(String worldName, String playerName, String permission)
+  {
+    return this.api.playerRemove(worldName, playerName, permission);
+  }
+  
+  public boolean groupHas(String worldName, String groupName, String permission)
+  {
+    return this.api.groupHas(groupName, permission);
+  }
+  
+  public boolean groupAdd(String worldName, String groupName, String permission)
+  {
+    return this.api.groupAdd(groupName, permission);
+  }
+  
+  public boolean groupRemove(String worldName, String groupName, String permission)
+  {
+    return this.api.groupRemove(groupName, permission);
+  }
+  
+  public boolean playerInGroup(String worldName, String playerName, String groupName)
+  {
+    return this.api.groupHasPlayer(playerName, groupName);
+  }
+  
+  public boolean playerAddGroup(String worldName, String playerName, String groupName)
+  {
+    return this.api.playerAddGroup(playerName, groupName);
+  }
+  
+  public boolean playerRemoveGroup(String worldName, String playerName, String groupName)
+  {
+    return this.api.playerRemoveGroup(playerName, groupName);
+  }
+  
+  public String[] getPlayerGroups(String worldName, String playerName)
+  {
+    return this.api.getPlayerGroups(worldName, playerName);
+  }
+  
+  public String getPrimaryGroup(String worldName, String playerName)
+  {
+    String[] playerGroups = getPlayerGroups(worldName, playerName);
+    if (playerGroups.length == 0) {
+      return null;
+    }
+    return playerGroups[0];
+  }
+  
+  public boolean playerAddTransient(String world, String player, String permission)
+  {
+    return this.api.playerAddTransient(world, player, permission);
+  }
+  
+  public boolean playerRemoveTransient(String world, String player, String permission)
+  {
+    return this.api.playerRemoveTransient(world, player, permission);
+  }
+  
+  public String[] getGroups()
+  {
+    return this.api.getGroupsArray();
+  }
+  
+  public boolean hasSuperPermsCompat()
+  {
+    return true;
+  }
+  
+  public boolean hasGroupSupport()
+  {
+    return true;
+  }
+  
+  public class PermissionServerListener
+    implements Listener
+  {
+    Permission_OverPermissions permission = null;
+    
+    public PermissionServerListener(Permission_OverPermissions permission)
+    {
+      this.permission = permission;
+    }
+    
+    @EventHandler(priority=EventPriority.MONITOR)
+    public void onPluginEnable(PluginEnableEvent event)
+    {
+      if (this.permission.overPerms == null)
+      {
+        Plugin perms = Permission_OverPermissions.this.plugin.getServer().getPluginManager().getPlugin("OverPermissions");
+        if (perms != null)
+        {
+          this.permission.overPerms = ((OverPermissions)perms);
+          Permission_OverPermissions.log.info(String.format("[%s][Permission] %s hooked.", new Object[] { Permission_OverPermissions.this.plugin.getDescription().getName(), "OverPermissions" }));
+        }
+      }
+    }
+    
+    @EventHandler(priority=EventPriority.MONITOR)
+    public void onPluginDisable(PluginDisableEvent event)
+    {
+      if ((this.permission.overPerms != null) && 
+        (event.getPlugin().getDescription().getName().equals("OverPermissions")))
+      {
+        this.permission.overPerms = null;
+        Permission_OverPermissions.log.info(String.format("[%s][Permission] %s un-hooked.", new Object[] { Permission_OverPermissions.this.plugin.getDescription().getName(), "OverPermissions" }));
+      }
+    }
+  }
+}
